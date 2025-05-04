@@ -2,7 +2,7 @@
 
 A beautiful, cosmic-themed Tic-Tac-Toe game with engaging animations, visual effects, and both single-player and two-player modes.
 
-![Cosmic Tic-Tac-Toe Game](https://i.imgur.com/YourGameScreenshot.png)
+![Cosmic Tic-Tac-Toe Game](https://i.imgur.com/cosmic-ttt-screenshot.png)
 
 ## ✨ Features
 
@@ -75,7 +75,7 @@ The computer opponent uses a strategic approach:
 - Game statistics tracking
 - Multiple difficulty levels
 - Custom player icons
-- Sound effects
+- Sound effects and background music
 
 ## 📜 License
 

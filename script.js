@@ -1,4 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Handle loading screen
+    const loadingScreen = document.getElementById('loading-screen');
+    
+    // Simulate loading time for better UX
+    setTimeout(() => {
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.visibility = 'hidden';
+                // Play welcome animation
+                playWelcomeAnimation();
+            }, 500);
+        }
+    }, 1500);
+    
     // Game variables
     let currentPlayer = 'x';
     let gameActive = true;
@@ -745,110 +760,42 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Computer AI logic
     function makeComputerMove() {
+        // Prevent any actions if the game is not active
         if (!gameActive) return;
         
-        let cellIndex;
+        // Find the best move using the minimax algorithm
+        const bestMove = findBestMove('o');
         
-        // Enhanced AI with minimax algorithm
-        if (moves < 2) {
-            // For very first moves, use some strategy to make the game more interesting
+        // Safety check - if no best move is found (shouldn't happen), pick a random open cell
+        if (bestMove === -1) {
+            const emptyCells = gameState.reduce((acc, cell, index) => {
+                if (cell === '') acc.push(index);
+                return acc;
+            }, []);
             
-            // If player took center, take a corner
-            if (gameState[4] === 'x') {
-                const corners = [0, 2, 6, 8];
-                const randomCorner = corners[Math.floor(Math.random() * corners.length)];
-                makeMove(randomCorner);
-                return;
+            if (emptyCells.length > 0) {
+                const randomIndex = Math.floor(Math.random() * emptyCells.length);
+                makeMove(emptyCells[randomIndex]);
             }
-            
-            // If player took a corner, usually best to take center
-            if (gameState[0] === 'x' || gameState[2] === 'x' || gameState[6] === 'x' || gameState[8] === 'x') {
-                if (gameState[4] === '') {
-                    makeMove(4);
-                    return;
+        } else {
+            // Delay the computer's move slightly for better UX
+            // This creates a more natural "thinking" feeling
+            setTimeout(() => {
+                // Add a "preview" effect before making the move
+                const targetCell = document.querySelector(`[data-cell-index="${bestMove}"]`);
+                if (targetCell) {
+                    // Preview effect
+                    targetCell.setAttribute('data-preview', 'true');
+                    targetCell.classList.add('o-preview');
+                    
+                    // Make the actual move after a brief preview
+                    setTimeout(() => {
+                        targetCell.removeAttribute('data-preview');
+                        targetCell.classList.remove('o-preview');
+                        makeMove(bestMove);
+                    }, 300);
                 }
-            }
-            
-            // If player took an edge, take center or a corner
-            if (gameState[1] === 'x' || gameState[3] === 'x' || gameState[5] === 'x' || gameState[7] === 'x') {
-                if (gameState[4] === '') {
-                    makeMove(4);
-                    return;
-                } else {
-                    const corners = [0, 2, 6, 8];
-                    const availableCorners = corners.filter(corner => gameState[corner] === '');
-                    if (availableCorners.length > 0) {
-                        const randomCorner = availableCorners[Math.floor(Math.random() * availableCorners.length)];
-                        makeMove(randomCorner);
-                        return;
-                    }
-                }
-            }
-        }
-        
-        // Use the faster approach first - check for immediate win or block
-        // Try to win first
-        cellIndex = findBestMove('o');
-        if (cellIndex !== -1) {
-            makeMove(cellIndex);
-            return;
-        }
-        
-        // Block player from winning
-        cellIndex = findBestMove('x');
-        if (cellIndex !== -1) {
-            makeMove(cellIndex);
-            return;
-        }
-        
-        // For more complex situations, use minimax
-        let bestScore = -Infinity;
-        let bestMove;
-        
-        // Get available moves
-        const availableMoves = gameState
-            .map((cell, index) => cell === '' ? index : -1)
-            .filter(index => index !== -1);
-            
-        // If less than 3 moves are available, just use minimax for perfect play
-        if (availableMoves.length <= 3) {
-            for (let i = 0; i < availableMoves.length; i++) {
-                const move = availableMoves[i];
-                gameState[move] = 'o';
-                const score = minimax(gameState, 0, false);
-                gameState[move] = '';
-                
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestMove = move;
-                }
-            }
-            
-            makeMove(bestMove);
-            return;
-        }
-        
-        // For more moves available, use strategic approach
-        
-        // Take center if available
-        if (gameState[4] === '') {
-            makeMove(4);
-            return;
-        }
-        
-        // Take corners if available
-        const corners = [0, 2, 6, 8];
-        const availableCorners = corners.filter(corner => gameState[corner] === '');
-        if (availableCorners.length > 0) {
-            const randomCorner = availableCorners[Math.floor(Math.random() * availableCorners.length)];
-            makeMove(randomCorner);
-            return;
-        }
-        
-        // Take any available spot
-        if (availableMoves.length > 0) {
-            const randomCell = availableMoves[Math.floor(Math.random() * availableMoves.length)];
-            makeMove(randomCell);
+            }, 400);
         }
     }
     
@@ -1163,66 +1110,85 @@ document.addEventListener('DOMContentLoaded', () => {
     playWelcomeAnimation();
     
     function playWelcomeAnimation() {
-        // Create initial starburst effect
-        const gameBoard = document.querySelector('.game-board');
-        const rect = gameBoard.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+        // Create a more dramatic entrance for the game
+        const gameContainer = document.querySelector('.game-container');
+        const cells = document.querySelectorAll('.cell');
+        const buttons = document.querySelectorAll('button');
+        const header = document.querySelector('header');
+        const gameInfo = document.querySelector('.game-info');
+        const footer = document.querySelector('footer');
         
-        // Create starburst
-        for (let i = 0; i < 40; i++) {
-            const star = document.createElement('div');
-            const angle = (i / 40) * 2 * Math.PI;
-            const distance = 300 + Math.random() * 100;
-            const size = Math.random() * 8 + 4;
-            const speed = 900 + Math.random() * 300;
-            const delay = Math.random() * 200;
-            const color = ['#ff4d88', '#00bfff', '#9966ff'][Math.floor(Math.random() * 3)];
-            
-            star.style.position = 'fixed';
-            star.style.width = star.style.height = `${size}px`;
-            star.style.backgroundColor = color;
-            star.style.borderRadius = '50%';
-            star.style.boxShadow = `0 0 ${size}px ${color}`;
-            star.style.left = `${centerX}px`;
-            star.style.top = `${centerY}px`;
-            star.style.zIndex = '100';
-            star.style.opacity = '0';
-            star.style.pointerEvents = 'none';
-            
-            document.body.appendChild(star);
-            
-            setTimeout(() => {
-                star.style.transition = `transform ${speed}ms ease-out, opacity ${speed * 0.8}ms ease-out`;
-                star.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
-                star.style.opacity = '1';
-                
-                setTimeout(() => {
-                    star.style.opacity = '0';
-                    setTimeout(() => {
-                        star.remove();
-                    }, speed * 0.2);
-                }, speed * 0.8);
-            }, delay);
-        }
-        
-        // Reveal board cells one by one with enhanced animation
-        cells.forEach((cell, index) => {
+        // Initial state - hide everything
+        gameContainer.style.opacity = '0';
+        header.style.opacity = '0';
+        gameInfo.style.opacity = '0';
+        footer.style.opacity = '0';
+        cells.forEach(cell => {
             cell.style.opacity = '0';
-            cell.style.transform = 'scale(0.5) rotate(180deg)';
-            
-            setTimeout(() => {
-                cell.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
-                cell.style.opacity = '1';
-                cell.style.transform = 'scale(1) rotate(0deg)';
-            }, 300 + index * 80);
+            cell.style.transform = 'scale(0.8) rotate(-5deg)';
+        });
+        buttons.forEach(button => {
+            button.style.opacity = '0';
+            button.style.transform = 'translateY(20px)';
         });
         
-        // Add transition effect to game container
-        gameContainer.classList.add('theme-transition');
+        // Start the animation sequence
         setTimeout(() => {
-            gameContainer.classList.remove('theme-transition');
-        }, 500);
+            // Animate the container
+            gameContainer.style.transition = 'opacity 1s ease-out';
+            gameContainer.style.opacity = '1';
+            
+            // Create the cosmic dust effect
+            createCosmicDust();
+            
+            // Animate the header
+            setTimeout(() => {
+                header.style.transition = 'opacity 0.8s ease-out, transform 0.8s ease-out';
+                header.style.opacity = '1';
+                header.style.transform = 'translateY(0)';
+            }, 200);
+            
+            // Animate the game board cells with a sequential effect
+            setTimeout(() => {
+                cells.forEach((cell, index) => {
+                    setTimeout(() => {
+                        cell.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        cell.style.opacity = '1';
+                        cell.style.transform = 'scale(1) rotate(0)';
+                    }, index * 50);
+                });
+            }, 500);
+            
+            // Animate the game info section
+            setTimeout(() => {
+                gameInfo.style.transition = 'opacity 0.8s ease-out';
+                gameInfo.style.opacity = '1';
+            }, 900);
+            
+            // Animate the buttons
+            setTimeout(() => {
+                buttons.forEach((button, index) => {
+                    setTimeout(() => {
+                        button.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                        button.style.opacity = '1';
+                        button.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+            }, 1000);
+            
+            // Animate the footer
+            setTimeout(() => {
+                footer.style.transition = 'opacity 0.8s ease-out';
+                footer.style.opacity = '1';
+            }, 1300);
+            
+            // Add ambient particle effects
+            setTimeout(() => {
+                createBackgroundParticles();
+                createFloatingParticles();
+            }, 1500);
+            
+        }, 100);
     }
     
     // Add cosmic dust particles
