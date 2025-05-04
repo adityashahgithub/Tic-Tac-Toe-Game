@@ -20,6 +20,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let gameState = ['', '', '', '', '', '', '', '', ''];
     let moves = 0;
     let gameMode = 'player'; // Default game mode: 'player' or 'computer'
+    let difficulty = 'medium'; // Default AI difficulty: 'easy', 'medium', 'hard'
+    
+    // Statistics tracking
+    let stats = {
+        gamesPlayed: 0,
+        xWins: 0,
+        oWins: 0,
+        ties: 0
+    };
+    
+    // Load stats from localStorage if available
+    loadStats();
     
     // DOM elements
     const statusMessage = document.getElementById('status-message');
@@ -34,6 +46,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const vsPlayerBtn = document.getElementById('vs-player-btn');
     const vsComputerBtn = document.getElementById('vs-computer-btn');
     const gameContainer = document.querySelector('.game-container');
+    const difficultySelector = document.getElementById('difficulty-selector');
+    const easyBtn = document.getElementById('easy-btn');
+    const mediumBtn = document.getElementById('medium-btn');
+    const hardBtn = document.getElementById('hard-btn');
+    
+    // Stats elements
+    const gamesPlayedEl = document.getElementById('games-played');
+    const xWinsEl = document.getElementById('x-wins');
+    const oWinsEl = document.getElementById('o-wins');
+    const tiesEl = document.getElementById('ties');
+    
+    // Update stats display
+    updateStatsDisplay();
     
     // Winning combinations
     const winningConditions = [
@@ -49,127 +74,55 @@ document.addEventListener('DOMContentLoaded', () => {
     vsPlayerBtn.addEventListener('click', () => setGameMode('player'));
     vsComputerBtn.addEventListener('click', () => setGameMode('computer'));
     
+    // Difficulty buttons event listeners
+    easyBtn.addEventListener('click', () => setDifficulty('easy'));
+    mediumBtn.addEventListener('click', () => setDifficulty('medium'));
+    hardBtn.addEventListener('click', () => setDifficulty('hard'));
+    
     // Add ripple effect to buttons
     const allButtons = document.querySelectorAll('button');
     allButtons.forEach(button => {
         button.addEventListener('click', createRippleEffect);
     });
     
-    // Create ripple effect
-    function createRippleEffect(event) {
-        const button = event.currentTarget;
-        const circle = document.createElement('span');
-        const diameter = Math.max(button.clientWidth, button.clientHeight);
-        const radius = diameter / 2;
+    // Function to set difficulty
+    function setDifficulty(level) {
+        difficulty = level;
         
-        circle.style.width = circle.style.height = `${diameter}px`;
-        circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
-        circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
-        circle.classList.add('ripple');
+        // Update UI
+        easyBtn.classList.remove('active');
+        mediumBtn.classList.remove('active');
+        hardBtn.classList.remove('active');
         
-        // Remove existing ripples
-        const ripple = button.querySelector('.ripple');
-        if (ripple) {
-            ripple.remove();
+        switch(level) {
+            case 'easy':
+                easyBtn.classList.add('active');
+                break;
+            case 'medium':
+                mediumBtn.classList.add('active');
+                break;
+            case 'hard':
+                hardBtn.classList.add('active');
+                break;
         }
         
-        button.appendChild(circle);
+        // Save preference to localStorage
+        localStorage.setItem('ticTacToeDifficulty', level);
         
-        // Remove ripple after animation completes
-        setTimeout(() => {
-            if (circle) {
-                circle.remove();
-            }
-        }, 600);
-    }
-    
-    // Add background particles
-    createBackgroundParticles();
-    
-    function createBackgroundParticles() {
-        // Clear any existing particles
-        document.querySelectorAll('.particle').forEach(p => p.remove());
-        
-        const particleCount = 30;
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.classList.add('particle');
-            
-            // Set random position
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            
-            // Set random animation delay and duration
-            const duration = 10 + Math.random() * 20;
-            particle.style.animation = `float-particle ${duration}s linear infinite`;
-            particle.style.animationDelay = `${Math.random() * duration}s`;
-            
-            document.body.appendChild(particle);
+        // If in the middle of a game against computer, reset
+        if (gameMode === 'computer' && gameActive && !allFieldsFilled()) {
+            setTimeout(resetGame, 300);
         }
     }
     
-    // Add floating particles
-    createFloatingParticles();
+    // Check if all fields are filled
+    function allFieldsFilled() {
+        return !gameState.includes('');
+    }
     
-    function createFloatingParticles() {
-        const container = document.querySelector('.game-container');
-        const particleCount = 15;
-        const colors = ['#ff4d88', '#00bfff', '#9966ff'];
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            particle.classList.add('quantum-particle');
-            
-            // Set random properties
-            const size = Math.random() * 6 + 2;
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            
-            // Apply styles
-            particle.style.width = `${size}px`;
-            particle.style.height = `${size}px`;
-            particle.style.backgroundColor = color;
-            particle.style.left = `${Math.random() * 100}%`;
-            particle.style.top = `${Math.random() * 100}%`;
-            particle.style.opacity = '0.7';
-            particle.style.position = 'absolute';
-            particle.style.borderRadius = '50%';
-            particle.style.boxShadow = `0 0 ${size}px ${color}`;
-            particle.style.zIndex = '-1';
-            
-            // Create animation
-            const duration = 15 + Math.random() * 15;
-            particle.style.animation = `float-particle ${duration}s linear infinite`;
-            particle.style.animationDelay = `${Math.random() * duration}s`;
-            
-            container.appendChild(particle);
-        }
-        
-        // Add keyframes for floating animation if they don't exist
-        if (!document.getElementById('particle-keyframes')) {
-            const style = document.createElement('style');
-            style.id = 'particle-keyframes';
-            style.innerHTML = `
-                @keyframes float-particle {
-                    0% {
-                        transform: translate(0, 0) rotate(0deg);
-                    }
-                    25% {
-                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg);
-                    }
-                    50% {
-                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg);
-                    }
-                    75% {
-                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg);
-                    }
-                    100% {
-                        transform: translate(0, 0) rotate(360deg);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
+    // Load saved difficulty if it exists
+    if (localStorage.getItem('ticTacToeDifficulty')) {
+        setDifficulty(localStorage.getItem('ticTacToeDifficulty'));
     }
     
     // Game mode selection
@@ -189,11 +142,26 @@ document.addEventListener('DOMContentLoaded', () => {
             vsComputerBtn.classList.remove('active');
             playerX.querySelector('.player-name').textContent = 'Player X';
             playerO.querySelector('.player-name').textContent = 'Player O';
+            
+            // Hide difficulty selector
+            difficultySelector.style.display = 'none';
+            
+            // Remove computer-mode class
+            gameContainer.classList.remove('computer-mode');
         } else {
             vsPlayerBtn.classList.remove('active');
             vsComputerBtn.classList.add('active');
             playerX.querySelector('.player-name').textContent = 'You';
             playerO.querySelector('.player-name').textContent = 'Computer';
+            
+            // Show difficulty selector with animation
+            difficultySelector.style.display = 'block';
+            difficultySelector.style.animation = 'none';
+            void difficultySelector.offsetWidth; // Force reflow
+            difficultySelector.style.animation = 'fadeInDown 0.5s forwards';
+            
+            // Add computer-mode class for height adjustment
+            gameContainer.classList.add('computer-mode');
         }
         
         // Ensure consistent colors - always use same colors regardless of game mode
@@ -203,6 +171,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // No animation for buttons
         const activeBtn = mode === 'player' ? vsPlayerBtn : vsComputerBtn;
         activeBtn.style.animation = 'none';
+        
+        // Save preference to localStorage
+        localStorage.setItem('ticTacToeGameMode', mode);
+    }
+    
+    // Load saved game mode if it exists
+    if (localStorage.getItem('ticTacToeGameMode')) {
+        setGameMode(localStorage.getItem('ticTacToeGameMode'));
+    } else {
+        // Hide difficulty selector initially if in player mode
+        if (gameMode === 'player') {
+            difficultySelector.style.display = 'none';
+        }
     }
     
     // Main game logic
@@ -429,6 +410,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (gameWon) {
             highlightWinningCells(winningCombination);
             
+            // Update statistics
+            stats.gamesPlayed++;
+            if (currentPlayer === 'x') {
+                stats.xWins++;
+            } else {
+                stats.oWins++;
+            }
+            saveStats();
+            updateStatsDisplay();
+            
             // Change message based on game mode
             let winMessage;
             if (gameMode === 'computer' && currentPlayer === 'o') {
@@ -448,6 +439,12 @@ document.addEventListener('DOMContentLoaded', () => {
     
     function checkTie() {
         if (moves === 9) {
+            // Update statistics
+            stats.gamesPlayed++;
+            stats.ties++;
+            saveStats();
+            updateStatsDisplay();
+            
             showWinModal('It\'s a Tie!');
             return true;
         }
@@ -763,100 +760,81 @@ document.addEventListener('DOMContentLoaded', () => {
         // Prevent any actions if the game is not active
         if (!gameActive) return;
         
-        // Find the best move using the minimax algorithm
-        const bestMove = findBestMove('o');
+        let bestMove;
+        
+        // Different AI behavior based on difficulty
+        switch(difficulty) {
+            case 'easy':
+                // Easy: Random moves
+                bestMove = makeRandomMove();
+                break;
+                
+            case 'medium':
+                // Medium: Mix of smart and random moves
+                if (Math.random() < 0.6) { // 60% chance of making a smart move
+                    bestMove = findBestMove('o');
+                    if (bestMove === -1) {
+                        bestMove = makeRandomMove();
+                    }
+                } else {
+                    bestMove = makeRandomMove();
+                }
+                break;
+                
+            case 'hard':
+            default:
+                // Hard: Always makes the best move
+                bestMove = findBestMove('o');
+                if (bestMove === -1) {
+                    bestMove = makeRandomMove();
+                }
+                break;
+        }
         
         // Safety check - if no best move is found (shouldn't happen), pick a random open cell
-        if (bestMove === -1) {
-            const emptyCells = gameState.reduce((acc, cell, index) => {
-                if (cell === '') acc.push(index);
-                return acc;
-            }, []);
-            
-            if (emptyCells.length > 0) {
-                const randomIndex = Math.floor(Math.random() * emptyCells.length);
-                makeMove(emptyCells[randomIndex]);
-            }
-        } else {
-            // Delay the computer's move slightly for better UX
-            // This creates a more natural "thinking" feeling
-            setTimeout(() => {
-                // Add a "preview" effect before making the move
-                const targetCell = document.querySelector(`[data-cell-index="${bestMove}"]`);
-                if (targetCell) {
-                    // Preview effect
-                    targetCell.setAttribute('data-preview', 'true');
-                    targetCell.classList.add('o-preview');
-                    
-                    // Make the actual move after a brief preview
-                    setTimeout(() => {
-                        targetCell.removeAttribute('data-preview');
-                        targetCell.classList.remove('o-preview');
-                        makeMove(bestMove);
-                    }, 300);
-                }
-            }, 400);
+        if (bestMove === undefined || bestMove === -1) {
+            bestMove = makeRandomMove();
         }
+        
+        // Add a thinking delay based on difficulty
+        let thinkingTime = 300; // Default medium thinking time
+        
+        if (difficulty === 'easy') {
+            thinkingTime = 400 + Math.random() * 400; // Slower for easy
+        } else if (difficulty === 'hard') {
+            thinkingTime = 200 + Math.random() * 200; // Faster for hard
+        }
+        
+        // Delay the computer's move slightly for better UX
+        setTimeout(() => {
+            // Add a "preview" effect before making the move
+            const targetCell = document.querySelector(`[data-cell-index="${bestMove}"]`);
+            if (targetCell) {
+                // Preview effect
+                targetCell.setAttribute('data-preview', 'true');
+                targetCell.classList.add('o-preview');
+                
+                // Make the actual move after a brief preview
+                setTimeout(() => {
+                    targetCell.removeAttribute('data-preview');
+                    targetCell.classList.remove('o-preview');
+                    makeMove(bestMove);
+                }, 300);
+            }
+        }, thinkingTime);
     }
     
-    // Minimax algorithm for optimal play in endgame positions
-    function minimax(board, depth, isMaximizing) {
-        // Base cases: check for win, loss, or tie
-        const result = checkWinState(board);
+    // Function to make a random move
+    function makeRandomMove() {
+        const emptyCells = gameState.reduce((acc, cell, index) => {
+            if (cell === '') acc.push(index);
+            return acc;
+        }, []);
         
-        if (result === 'o') return 10 - depth; // Computer wins (o)
-        if (result === 'x') return depth - 10; // Player wins (x)
-        if (result === 'tie') return 0;       // Tie game
-        
-        if (isMaximizing) {
-            // Computer's turn (maximize)
-            let bestScore = -Infinity;
-            for (let i = 0; i < board.length; i++) {
-                if (board[i] === '') {
-                    board[i] = 'o';
-                    const score = minimax(board, depth + 1, false);
-                    board[i] = '';
-                    bestScore = Math.max(score, bestScore);
-                }
-            }
-            return bestScore;
-        } else {
-            // Player's turn (minimize)
-            let bestScore = Infinity;
-            for (let i = 0; i < board.length; i++) {
-                if (board[i] === '') {
-                    board[i] = 'x';
-                    const score = minimax(board, depth + 1, true);
-                    board[i] = '';
-                    bestScore = Math.min(score, bestScore);
-                }
-            }
-            return bestScore;
+        if (emptyCells.length > 0) {
+            return emptyCells[Math.floor(Math.random() * emptyCells.length)];
         }
-    }
-    
-    // Helper function to check win state for minimax
-    function checkWinState(board) {
-        // Check for win
-        for (let i = 0; i < winningConditions.length; i++) {
-            const [a, b, c] = winningConditions[i];
-            
-            if (
-                board[a] !== '' &&
-                board[a] === board[b] &&
-                board[a] === board[c]
-            ) {
-                return board[a]; // Return the winner ('x' or 'o')
-            }
-        }
-        
-        // Check for tie
-        if (!board.includes('')) {
-            return 'tie';
-        }
-        
-        // Game still in progress
-        return null;
+        return -1;
     }
     
     function findBestMove(player) {
@@ -1257,5 +1235,222 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             document.head.appendChild(style);
         }
+    }
+    
+    function saveStats() {
+        localStorage.setItem('cosmicTicTacToeStats', JSON.stringify(stats));
+    }
+    
+    function loadStats() {
+        const savedStats = localStorage.getItem('cosmicTicTacToeStats');
+        if (savedStats) {
+            stats = JSON.parse(savedStats);
+        }
+    }
+    
+    function updateStatsDisplay() {
+        if (gamesPlayedEl) gamesPlayedEl.textContent = stats.gamesPlayed;
+        if (xWinsEl) xWinsEl.textContent = stats.xWins;
+        if (oWinsEl) oWinsEl.textContent = stats.oWins;
+        if (tiesEl) tiesEl.textContent = stats.ties;
+        
+        // Add animation to updated stats
+        const statValues = document.querySelectorAll('.stat-value');
+        statValues.forEach(stat => {
+            stat.style.animation = 'none';
+            void stat.offsetWidth; // Force reflow
+            stat.style.animation = 'stats-update 0.5s ease-out';
+        });
+    }
+    
+    // Add keyframe animation for stats update if not exists
+    if (!document.getElementById('stats-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'stats-keyframes';
+        style.innerHTML = `
+            @keyframes stats-update {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.3); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Create ripple effect
+    function createRippleEffect(event) {
+        const button = event.currentTarget;
+        const circle = document.createElement('span');
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+        
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+        circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+        circle.classList.add('ripple');
+        
+        // Remove existing ripples
+        const ripple = button.querySelector('.ripple');
+        if (ripple) {
+            ripple.remove();
+        }
+        
+        button.appendChild(circle);
+        
+        // Remove ripple after animation completes
+        setTimeout(() => {
+            if (circle) {
+                circle.remove();
+            }
+        }, 600);
+    }
+    
+    // Add background particles
+    createBackgroundParticles();
+    
+    function createBackgroundParticles() {
+        // Clear any existing particles
+        document.querySelectorAll('.particle').forEach(p => p.remove());
+        
+        const particleCount = 30;
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            
+            // Set random position
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            
+            // Set random animation delay and duration
+            const duration = 10 + Math.random() * 20;
+            particle.style.animation = `float-particle ${duration}s linear infinite`;
+            particle.style.animationDelay = `${Math.random() * duration}s`;
+            
+            document.body.appendChild(particle);
+        }
+    }
+    
+    // Add floating particles
+    createFloatingParticles();
+    
+    function createFloatingParticles() {
+        const container = document.querySelector('.game-container');
+        const particleCount = 15;
+        const colors = ['#ff4d88', '#00bfff', '#9966ff'];
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('quantum-particle');
+            
+            // Set random properties
+            const size = Math.random() * 6 + 2;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Apply styles
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            particle.style.backgroundColor = color;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.opacity = '0.7';
+            particle.style.position = 'absolute';
+            particle.style.borderRadius = '50%';
+            particle.style.boxShadow = `0 0 ${size}px ${color}`;
+            particle.style.zIndex = '-1';
+            
+            // Create animation
+            const duration = 15 + Math.random() * 15;
+            particle.style.animation = `float-particle ${duration}s linear infinite`;
+            particle.style.animationDelay = `${Math.random() * duration}s`;
+            
+            container.appendChild(particle);
+        }
+        
+        // Add keyframes for floating animation if they don't exist
+        if (!document.getElementById('particle-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'particle-keyframes';
+            style.innerHTML = `
+                @keyframes float-particle {
+                    0% {
+                        transform: translate(0, 0) rotate(0deg);
+                    }
+                    25% {
+                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(90deg);
+                    }
+                    50% {
+                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(180deg);
+                    }
+                    75% {
+                        transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) rotate(270deg);
+                    }
+                    100% {
+                        transform: translate(0, 0) rotate(360deg);
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+    
+    // Minimax algorithm for optimal play in endgame positions
+    function minimax(board, depth, isMaximizing) {
+        // Base cases: check for win, loss, or tie
+        const result = checkWinState(board);
+        
+        if (result === 'o') return 10 - depth; // Computer wins (o)
+        if (result === 'x') return depth - 10; // Player wins (x)
+        if (result === 'tie') return 0;       // Tie game
+        
+        if (isMaximizing) {
+            // Computer's turn (maximize)
+            let bestScore = -Infinity;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === '') {
+                    board[i] = 'o';
+                    const score = minimax(board, depth + 1, false);
+                    board[i] = '';
+                    bestScore = Math.max(score, bestScore);
+                }
+            }
+            return bestScore;
+        } else {
+            // Player's turn (minimize)
+            let bestScore = Infinity;
+            for (let i = 0; i < board.length; i++) {
+                if (board[i] === '') {
+                    board[i] = 'x';
+                    const score = minimax(board, depth + 1, true);
+                    board[i] = '';
+                    bestScore = Math.min(score, bestScore);
+                }
+            }
+            return bestScore;
+        }
+    }
+    
+    // Helper function to check win state for minimax
+    function checkWinState(board) {
+        // Check for win
+        for (let i = 0; i < winningConditions.length; i++) {
+            const [a, b, c] = winningConditions[i];
+            
+            if (
+                board[a] !== '' &&
+                board[a] === board[b] &&
+                board[a] === board[c]
+            ) {
+                return board[a]; // Return the winner ('x' or 'o')
+            }
+        }
+        
+        // Check for tie
+        if (!board.includes('')) {
+            return 'tie';
+        }
+        
+        // Game still in progress
+        return null;
     }
 }); 

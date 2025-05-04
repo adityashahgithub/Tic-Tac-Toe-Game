@@ -32,6 +32,21 @@
             </button>
         </div>
         
+        <div id="difficulty-selector" class="difficulty-selector">
+            <div class="difficulty-label">AI Difficulty:</div>
+            <div class="difficulty-options">
+                <button id="easy-btn" class="difficulty-btn">
+                    <i class="fas fa-baby"></i> Easy
+                </button>
+                <button id="medium-btn" class="difficulty-btn active">
+                    <i class="fas fa-user"></i> Medium
+                </button>
+                <button id="hard-btn" class="difficulty-btn">
+                    <i class="fas fa-brain"></i> Hard
+                </button>
+            </div>
+        </div>
+        
         <div class="game-info">
             <div class="player-turn">
                 <div id="player-x" class="player active">
@@ -64,8 +79,32 @@
             </button>
         </div>
         
+        <div class="stats-panel">
+            <div class="stats-header">
+                <i class="fas fa-chart-line"></i> Game Statistics
+            </div>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-label">Games Played</div>
+                    <div id="games-played" class="stat-value">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">X Wins</div>
+                    <div id="x-wins" class="stat-value x-stat">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">O Wins</div>
+                    <div id="o-wins" class="stat-value o-stat">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Ties</div>
+                    <div id="ties" class="stat-value">0</div>
+                </div>
+            </div>
+        </div>
+        
         <footer>
-            <p>&copy; 2025 Cosmic Tic-Tac-Toe <br> All Rights Reserved. <span class="highlight">Contact: shahaditya29904@gmail.com</span></p>
+            <p>&copy; 2025 QuantumCalc. All Rights Reserved. <span class="highlight">Contact: shahaditya29904@gmail.com</span></p>
         </footer>
         
         <div id="win-modal" class="modal">
